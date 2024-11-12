@@ -11,3 +11,5 @@ cat duel.score | ../mvdToJSON.py duel|jq
 
 ../mvdToJSON.py || true
 ../mvdToJSON.py wrong_mode || true
+
+cat chat.log | ../mvdCHATToJSON.py | jq
