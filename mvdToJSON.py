@@ -113,7 +113,7 @@ def parseDamage(damage):
 
 def parseEndGame(endGame):
   """Parse stat at the end of the game like 
-    EndGame: H:67 A:0
+    EndGame: H:250 A:ra200
   @param endGame The end game info to parse.
   @return The dictionary about end game stat. 
   """
@@ -121,8 +121,21 @@ def parseEndGame(endGame):
   parsedEndGame = {}
   info = endGame.replace("EndGame: ","").split()
   parsedEndGame["H"] = int(info[0].split(':')[1])
-  parsedEndGame["A"] = int(info[1].split(':')[1])
+  parsedEndGame["A"] = info[1].split(':')[1]
   return parsedEndGame
+
+def parseOverTime(overTime):
+  """Parse stat at the end of the game like
+    OverTime: H:250 A:ra200
+  @param overTime The over time info to parse.
+  @return The dictionary about over time stat.
+  """
+
+  parsedOverTime = {}
+  info = overTime.replace("OverTime: ","").split()
+  parsedOverTime["H"] = int(info[0].split(':')[1])
+  parsedOverTime["A"] = info[1].split(':')[1]
+  return parsedOverTime
 
 def parseSpawnfrags(spawnfrags):
   """Parse stat about spawn frags like 
@@ -187,7 +200,7 @@ def mvdParseDuel():
   playerStat = {}
   allPlayersStat = []
   while playersNumber < 2:
-    playerStat["name"] = sys.stdin.readline().strip()[:-1]
+    playerStat["name"] =  sys.stdin.readline().strip()[:-1]
     playerStat["scores"] = paresScores(sys.stdin.readline().strip())
     playerStat["weapons_efficiency"] = parseWeaponEfficiency(sys.stdin.readline().strip())
     playerStat["skill_RL"] = parseSkillRL(sys.stdin.readline().strip())
@@ -195,7 +208,12 @@ def mvdParseDuel():
     playerStat["armors_and_megas"] = parseArmorsAndMegas(sys.stdin.readline().strip())
     playerStat["damage"] = parseDamage(sys.stdin.readline().strip())
     playerStat["end_game"] = parseEndGame(sys.stdin.readline().strip())
-    playerStat["spawnfrags"] = parseSpawnfrags(sys.stdin.readline().strip())
+    info = sys.stdin.readline().strip()
+    if info.count("OverTime") != 0:
+      playerStat["over_time"] = parseOverTime(info)
+      playerStat["spawnfrags"] = parseSpawnfrags(sys.stdin.readline().strip())
+    else:
+      playerStat["spawnfrags"] = parseSpawnfrags(info)
     allPlayersStat.append(playerStat)
     playerStat = {}
     playersNumber += 1

@@ -30,5 +30,6 @@ demoType=$2
   sed -e 's/svc_print: (CRITICAL)//g' -e 's/_//g' -e '/svcprint/ d' -e '/: Disconnected/ d' |\
   sed -e '/^ $/ d' |\
   tail -n +4 |\
+  iconv -tUTF-8 |\
   ../mvdToJSON.py $demoType >$fileName.score.json  && jq '. += input' $fileName.json $fileName.score.json |\
   jq ' . += input' - $fileName.chat.json > $fileName.desc.json
