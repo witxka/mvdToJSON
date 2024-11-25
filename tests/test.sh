@@ -6,7 +6,8 @@
   set -e
 
 cat 2on2.score | ../mvdToJSON.py 2on2|jq
-cat 4on4.score | ../mvdToJSON.py 4on4|jq
+cat 4on4.v2.score | ../mvdToJSON.py 4on4|jq
+cat 4on4.v1.score | ../mvdToJSON.py 4on4v1|jq
 cat duel.score | ../mvdToJSON.py duel|jq
 cat duel01.score | ../mvdToJSON.py duel|jq
 cat duel02.score | ../mvdToJSON.py duel|jq

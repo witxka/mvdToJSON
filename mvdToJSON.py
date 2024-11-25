@@ -97,6 +97,20 @@ def parseArmorsAndMegas(armorsAndMegas):
   parsedArmorsAndMegas["mh"] = int(info[3].split(':')[1])
   return parsedArmorsAndMegas
 
+def parseArmors(armors):
+  """Parse armors info like 
+     Armors: ga:23 ya:0 ra:16
+  @param armors The stat about taken armors.
+  @return The dictionary about armors. 
+  """
+
+  parsedArmors = {}
+  info = armors.replace("Armors: ","").split()
+  parsedArmors["ga"] = int(info[0].split(':')[1])
+  parsedArmors["ya"] = int(info[1].split(':')[1])
+  parsedArmors["ra"] = int(info[2].split(':')[1])
+  return parsedArmors
+
 def parseDamage(damage):
   """Parse damage info like 
      Damage: Tkn:7263 Gvn:6633 Tm:0
@@ -106,9 +120,10 @@ def parseDamage(damage):
 
   parsedDamage = {}
   info = damage.replace("Damage: ","").split()
-  parsedDamage["tkn"] = int(info[0].split(':')[1])
-  parsedDamage["gvn"] = int(info[1].split(':')[1])
-  parsedDamage["tm"] = int(info[2].split(':')[1])
+  parsedDamage["tkn"] = float(info[0].split(':')[1])
+  parsedDamage["gvn"] = float(info[1].split(':')[1])
+  if (len(info) >3 ):
+    parsedDamage["tm"] = int(info[2].split(':')[1])
   return parsedDamage
 
 def parseEndGame(endGame):
@@ -153,7 +168,6 @@ def parsePowerups(powerups):
   @param powerups The powerups info to parse.
   @return The dictionary about powerups. 
   """
-
   parsedPowerups = {}
   info = powerups.replace("Powerups: ","").split()
   parsedPowerups["Q"] = int(info[0].split(':')[1])
@@ -231,6 +245,19 @@ def mvdParse4on4():
   matchInfo["match_stat"] = parse2on2and4on4MatchStatistics()
   return matchInfo
 
+def mvdParse4on4v1():
+  """Parse mvdparser output to JSON format for match info.
+     The output for parsing should be for 4on4  v1 mode.
+
+  @return The dictionary of the match info.
+  """
+  matchInfo = {}
+  matchInfo["match_stat"] = parse2on2and4on4MatchStatisticsv1()
+  matchInfo["players_stat"] = parse4on4PlayersStatisticsv1()
+  matchInfo["top_scores"] = parse2on2and4on4TopScoresv1()
+  matchInfo["team_scores"] = parse2on2and4on4TeamScores()
+  return matchInfo
+
 def parse4on4PlayersStatistics():
   """Parse mvdparser output to JSON format for match info.
      The output for parsing should be for 4on4 mode with team statistics.
@@ -257,6 +284,37 @@ def parse4on4PlayersStatistics():
       playerStat["damage"] = parseDamage(sys.stdin.readline().strip())
       playerStat["streaks"] = parseStreaks(sys.stdin.readline().strip())
       playerStat["spawnfrags"] = parseSpawnfrags(sys.stdin.readline().strip())
+      allPlayersStat.append(playerStat)
+      playersNumber += 1
+    teamStat["players"] = allPlayersStat
+    allTeamsStat.append(teamStat)
+    teamsNumber += 1
+  matchInfo["teams"] = allTeamsStat  
+  return matchInfo
+
+def parse4on4PlayersStatisticsv1():
+  """Parse mvdparser output to JSON format for match info.
+     The output for parsing should be for 4on4 v1 mode with team statistics.
+
+  @return The dictionary of the match info team statistics.
+  """
+  matchInfo = {}
+  teamsNumber = 0
+  allTeamsStat = []
+  # skip the header
+  sys.stdin.readline()
+  sys.stdin.readline()
+
+  while teamsNumber < 2:
+    allPlayersStat = []
+    teamStat = {}
+    playersNumber = 0
+    teamStat["name"] = sys.stdin.readline().strip().replace("Team ","")[:-1]
+    while playersNumber < 4:
+      playerStat = {}
+      info = sys.stdin.readline().strip()
+      playerStat["name"] = info.split(':')[0]
+      playerStat["scores"] = paresTeamScores(info.split(':')[1])
       allPlayersStat.append(playerStat)
       playersNumber += 1
     teamStat["players"] = allPlayersStat
@@ -324,6 +382,17 @@ def parse2on2and4on4MatchStatistics():
 
   return matchInfo
 
+def parse2on2and4on4MatchStatisticsv1():
+  """Parse mvdparser output to JSON format for match info.
+     The output for parsing should be for 2on2 or 4on4 v1 match statistics.
+
+  @return The dictionary of the match info.
+  """
+  matchInfo = {}
+
+  matchInfo["teams"] = parse2on2and4on4TeamStatisticsv1()
+  return matchInfo
+
 def parse2on2and4on4TeamStatistics():
   """Parse mvdparser output to JSON format for match info.
      The output for parsing should be for 2on2 or 4on4 team statistics.
@@ -352,6 +421,28 @@ def parse2on2and4on4TeamStatistics():
     teamsNumber += 1
   return allTeamsStat
 
+def parse2on2and4on4TeamStatisticsv1():
+  """Parse mvdparser output to JSON format for match info.
+     The output for parsing should be for 2on2 or 4on4 v1 team statistics.
+
+  @return The dictionary of the match info.
+  """
+  matchInfo = {}
+  teamsNumber = 0
+  teamStat = {}
+  allTeamsStat = []
+  while teamsNumber < 2:
+    teamStat = {}
+    info = sys.stdin.readline().strip() 
+    teamStat["name"] = info.split(":")[0]
+    teamStat["weapons_efficiency"] = parseWeaponEfficiency(info.replace(teamStat["name"]+":",""))
+    teamStat["powerups"] = parsePowerups(sys.stdin.readline().strip())
+    teamStat["armors"] = parseArmors(sys.stdin.readline().strip())
+    teamStat["damage"] = parseDamage(sys.stdin.readline().strip())
+
+    allTeamsStat.append(teamStat)
+    teamsNumber += 1
+  return allTeamsStat
 
 def parse2on2and4on4TopScores():
   """Parse mvdparser output to JSON format for match info.
@@ -390,7 +481,46 @@ def parse2on2and4on4TopScores():
       keys.append("")
 
   matchInfo[savedField] = scoresInfo 
-  return matchInfo  
+  return matchInfo
+
+def parse2on2and4on4TopScoresv1():
+  """Parse mvdparser output to JSON format for match info.
+     The output for parsing should be for 2on2 or 4on4 v1 match statistics top scores.
+
+  @return The dictionary of the match info.
+  """
+  matchInfo = {}
+  scoresInfo = []
+  savedField ="frags"
+  keys = ["frags", "deaths", "friendkills", "efficiency","--END--"]
+  # skip the head
+  sys.stdin.readline()
+  field = keys[0]
+  i = 0
+
+  while field != "--END--":
+    info = sys.stdin.readline().strip().replace("%","").replace(" :","s:")
+    if info.count(":") != 0:
+      if scoresInfo:
+        matchInfo[savedField] = scoresInfo
+        scoresInfo = []
+        
+      savedField = field
+      i += 1
+      field = keys[i] 
+      union = {}
+      union["name"] = info.split()[1]
+      union["count"] = float(info.split()[2])  
+      scoresInfo.append(union)
+    else:
+      union = {}
+      union["name"] = info.split()[0]
+      union["count"] = float(info.split()[1])  
+      scoresInfo.append(union)
+      keys.append("")
+
+  matchInfo[savedField] = scoresInfo 
+  return matchInfo 
 
 def parse2on2and4on4TeamScores():
   """Parse mvdparser output to JSON format for match info.
@@ -415,12 +545,12 @@ def main():
   """Main function. Read mvdparsers output fron stdin and build final match info in JSON.
 
   @param argv[1] The command line parameter for demo type to parse.
-                 duel,2on2,4on4 allowed    
+                 duel, 2on2, 4on4, 4on4v1 allowed    
   @return The output in JSON format.
   """
   try:
     if len(sys.argv) != 2:
-      print("Usage: ",sys.argv[0]," duel|2on2|4on4")
+      print("Usage: ",sys.argv[0]," duel|2on2|4on4|4on4v1")
       sys.exit(1)
     demoType = sys.argv[1]
     if  demoType == "duel":   
@@ -429,9 +559,11 @@ def main():
       matchInfo = mvdParse2on2()
     elif demoType == "4on4": 
       matchInfo = mvdParse4on4()
+    elif demoType == "4on4v1":
+      matchInfo = mvdParse4on4v1()
     else :
       print("ERROR: unknown demo type: ", demoType)
-      print("Usage: ",sys.argv[0]," duel|2on2|4on4") 
+      print("Usage: ",sys.argv[0]," duel|2on2|4on4|4on4v1") 
       sys.exit(1)   
     print(json.dumps (matchInfo))
   except Exception as e:
