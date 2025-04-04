@@ -81,6 +81,27 @@ def parseSpeed(speed):
   parsedSpeed["max"] = float(info[0].split(':')[1])
   parsedSpeed["average"] = float(info[1].split(':')[1])
   return parsedSpeed
+def parseMovement(movement):
+  """Parse movement info  like 
+     Movement: Perfect strafes:27.2% (180/661) SOCD detections:0/26
+
+  @param movement The movement info to parse.
+  @return The dictionary about movement 
+  """
+  parsedMovement = {}
+  weapons = {"lg":'%',"rl":'',"sg":'%',"g":'%'}   
+  info = movement.replace("Movement: ","").replace("Perfect strafes:","").replace("SOCD detections:","").\
+    replace("%","").replace("(","").replace(")","").split()
+  perfectStrafes = {}
+  perfectStrafes["eff"] = float(info[0])
+  perfectStrafes["num"] = int(info[1].split('/')[0])
+  perfectStrafes["total"] = int(info[1].split('/')[1])
+  parsedMovement["perfect_strafes"] = perfectStrafes
+  socdDetection = {}
+  socdDetection["num"] = int(info[2].split('/')[0])
+  socdDetection["total"] = int(info[2].split('/')[1])
+  parsedMovement["socd_detection"] = socdDetection
+  return parsedMovement
 
 def parseArmorsAndMegas(armorsAndMegas):
   """Parse armors and megas info like 
@@ -125,6 +146,19 @@ def parseDamage(damage):
   if (len(info) >3 ):
     parsedDamage["tm"] = int(info[2].split(':')[1])
   return parsedDamage
+
+def parsedTime(time):
+  """Parse Time info like 
+     Time: Control:163 (27%)
+  @param time The time info to parse.
+  @return The dictionary about time. 
+  """
+
+  parsedTime = {} 
+  info = time.replace("Time: ","").split()
+  parsedTime["control"] = int(info[0].split(':')[1])
+  parsedTime["eff"] = int(info[1].replace("(","").replace(")","").replace("%",""))
+  return parsedTime
 
 def parseEndGame(endGame):
   """Parse stat at the end of the game like 
@@ -204,7 +238,7 @@ def parseStatRL(statRL):
 
 def mvdParseDuel():
   """Parse mvdparser output to JSON format for match info.
-     The output for parsing should be for duel mode.
+     The output for parsing should be for duel mode v0,v1(time control), v2(movement) info.
 
   @return The dictionary of the match info.
   """
@@ -219,9 +253,21 @@ def mvdParseDuel():
     playerStat["weapons_efficiency"] = parseWeaponEfficiency(sys.stdin.readline().strip())
     playerStat["skill_RL"] = parseSkillRL(sys.stdin.readline().strip())
     playerStat["speed"] = parseSpeed(sys.stdin.readline().strip())
-    playerStat["armors_and_megas"] = parseArmorsAndMegas(sys.stdin.readline().strip())
+    # v2 added movement info
+    check_v2 = sys.stdin.readline().strip()
+    if check_v2.count("Movement") != 0:
+      playerStat["movement"] = parseMovement(check_v2)  
+      playerStat["armors_and_megas"] = parseArmorsAndMegas(sys.stdin.readline().strip())
+    else:
+      playerStat["armors_and_megas"] = parseArmorsAndMegas(check_v2)
     playerStat["damage"] = parseDamage(sys.stdin.readline().strip())
-    playerStat["end_game"] = parseEndGame(sys.stdin.readline().strip())
+    # v1 added time control info
+    check_v1 = sys.stdin.readline().strip()
+    if check_v1.count("Time") != 0:
+      playerStat["time"] = parsedTime(check_v1)
+      playerStat["end_game"] = parseEndGame(sys.stdin.readline().strip())
+    else:
+      playerStat["end_game"] = parseEndGame(check_v1)
     info = sys.stdin.readline().strip()
     if info.count("OverTime") != 0:
       playerStat["over_time"] = parseOverTime(info)
@@ -545,7 +591,7 @@ def main():
   """Main function. Read mvdparsers output fron stdin and build final match info in JSON.
 
   @param argv[1] The command line parameter for demo type to parse.
-                 duel, 2on2, 4on4, 4on4v1 allowed    
+                 duel, duelv1(time control), duel, 2on2, 4on4, 4on4v1 allowed    
   @return The output in JSON format.
   """
   try:
